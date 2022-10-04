@@ -57,8 +57,6 @@ import java.util.Map;
 
 	private PacketsTransfer packetsTransfer;
 
-	private VpnService.Builder builder;
-
 	/* package */ NetBareThread(VpnService vpnService, NetBareConfig config) {
 		super("NetBare");
 		this.mVpnService = vpnService;
@@ -72,13 +70,6 @@ import java.util.Map;
 		NetBareUtils.closeQuietly(vpnDescriptor);
 		NetBareUtils.closeQuietly(input);
 		NetBareUtils.closeQuietly(output);
-		try {
-			builder.establish().close();
-		} catch (IOException e) {
-			NetBareLog.wtf(e);
-		}
-		// Notify NetBareListener that the service is stopped now.
-		NetBare.get().notifyServiceStopped();
 	}
 
 	@Override
@@ -97,6 +88,10 @@ import java.util.Map;
 			// Establish VPN, it runs a while loop unless failed.
 			establishVpn(packetsTransfer);
 		}
+
+		// Notify NetBareListener that the service is stopped now.
+		NetBare.get().notifyServiceStopped();
+
 	}
 
 	private void establishVpn(PacketsTransfer packetsTransfer) {
@@ -130,7 +125,6 @@ import java.util.Map;
 		} catch (PackageManager.NameNotFoundException e) {
 			NetBareLog.wtf(e);
 		}
-		this.builder = builder;
 		vpnDescriptor = builder.establish();
 		if (vpnDescriptor == null) {
 			return;
@@ -200,7 +194,7 @@ import java.util.Map;
 			transfer(buffer, input.read(buffer), output);
 		}
 
-		private synchronized void transfer(byte[] packet, int len, OutputStream output) {
+		private void transfer(byte[] packet, int len, OutputStream output) {
 			if (len < IpHeader.MIN_HEADER_LENGTH) {
 				NetBareLog.w("Ip header length < " + IpHeader.MIN_HEADER_LENGTH);
 				return;
